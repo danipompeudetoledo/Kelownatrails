@@ -21,15 +21,18 @@ pipeline {
             }
         }
 
-        stage('Deploy to Production') {
-            steps {
-                echo 'Deploying to Production Servers...'
-                // Copia os arquivos para o primeiro servidor
-                sh 'scp -i $KEY_PATH -o StrictHostKeyChecking=no -r * $PROD_SERVER_1:/var/www/html/'
-                // Copia os arquivos para o segundo servidor
-                sh 'scp -i $KEY_PATH -o StrictHostKeyChecking=no -r * $PROD_SERVER_2:/var/www/html/'
-            }
-        }
+       stage('Deploy to Production') {
+    steps {
+        echo 'Deploying Kelowna Trails application to Production Servers...'
+
+        // Copia apenas o conteúdo da pasta "public" para /var/www/html nos dois servidores
+        sh '''
+        scp -i $KEY_PATH -o StrictHostKeyChecking=no -r public/* $PROD_SERVER_1:/var/www/html/
+        scp -i $KEY_PATH -o StrictHostKeyChecking=no -r public/* $PROD_SERVER_2:/var/www/html/
+        '''
+    }
+}
+
 
         stage('Verification') {
             steps {
