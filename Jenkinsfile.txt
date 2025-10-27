@@ -1,32 +1,51 @@
-pipeline{
+pipeline {
     agent any
+
     environment {
-    FIREBASE_DEPLOY_TOKEN = credentials('firebase-token')
+        PROD_SERVER_1 = "ec2-user@3.235.130.40"
+        PROD_SERVER_2 = "ec2-user@13.221.172.199"
+        KEY_PATH = "/var/lib/jenkins/devops-key.pem"
     }
 
- stages{
-        stage('Building'){
-            steps{
-           // sh 'npm install -g firebase-tools'
-                echo 'Biulding...'
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/danipompeudetoledo/Kelownatrails.git'
             }
-        } 
-        stage('Testing Environment'){
-            steps{
-            sh 'firebase deploy -P devops-proj-testing --token "$FIREBASE_DEPLOY_TOKEN"'
-            input message: 'After testing. Do you want to continue with Staging Environment? (Click "Proceed" to continue)'
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Building application...'
+                sh 'echo "Build successful!"'
             }
-        } 
-        stage('Staging Environment'){
-            steps{
-             sh 'firebase deploy -P devops-proj-staging --token "$FIREBASE_DEPLOY_TOKEN"'
+        }
+
+        stage('Deploy to Production') {
+            steps {
+                echo 'Deploying to Production Servers...'
+                // Copia os arquivos para o primeiro servidor
+                sh 'scp -i $KEY_PATH -o StrictHostKeyChecking=no -r * $PROD_SERVER_1:/var/www/html/'
+                // Copia os arquivos para o segundo servidor
+                sh 'scp -i $KEY_PATH -o StrictHostKeyChecking=no -r * $PROD_SERVER_2:/var/www/html/'
             }
-        } 
-        stage('Production Environment'){
-            steps{
-            sh 'firebase deploy -P devops-proj-production-bcfd9 --token "$FIREBASE_DEPLOY_TOKEN"'
+        }
+
+        stage('Verification') {
+            steps {
+                echo 'Verifying deployment...'
+                sh 'curl http://3.235.130.40'
+                sh 'curl http://13.221.172.199'
             }
-        } 
+        }
     }
 
+    post {
+        success {
+            echo 'Deployment completed successfully!'
+        }
+        failure {
+            echo 'Deployment failed. Check logs.'
+        }
+    }
 }
